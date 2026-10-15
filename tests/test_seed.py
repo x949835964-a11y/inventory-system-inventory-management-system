@@ -83,6 +83,20 @@ def test_seed_command_refuses_to_overwrite_without_reset(app, seeded):
     assert "--reset" in result.output
 
 
+def test_seed_command_if_empty_loads_an_empty_database(app, db):
+    result = app.test_cli_runner().invoke(args=["seed", "--if-empty", "--days", "7"])
+    assert result.exit_code == 0, result.output
+    assert len(_all(db, User)) == len(DEMO_ACCOUNTS)
+
+
+def test_seed_command_if_empty_never_touches_existing_data(app, db, seeded):
+    movements_before = len(_all(db, StockMovement))
+    result = app.test_cli_runner().invoke(args=["seed", "--if-empty", "--days", "7"])
+    assert result.exit_code == 0  # must not break the start command
+    assert "no se carga la demo" in result.output
+    assert len(_all(db, StockMovement)) == movements_before
+
+
 def test_seed_command_reset(app, db, seeded):
     result = app.test_cli_runner().invoke(args=["seed", "--reset", "--yes", "--days", "7"])
     assert result.exit_code == 0, result.output

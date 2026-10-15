@@ -6,8 +6,9 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    # Apply pending migrations on every start, then serve with gunicorn.
-    startCommand: flask db upgrade && gunicorn run:app --workers 2 --timeout 60
+    # On every start: apply pending migrations, load the demo only if the database is empty
+    # (never overwrites existing data), then serve with gunicorn.
+    startCommand: flask db upgrade && flask seed --if-empty --days 20 && gunicorn run:app --workers 2 --timeout 60
     healthCheckPath: /health
     envVars:
       - key: FLASK_APP

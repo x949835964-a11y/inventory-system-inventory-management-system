@@ -27,13 +27,21 @@ def register_cli(app: Flask) -> None:
     @app.cli.command("seed")
     @click.option("--reset", is_flag=True, help="Borra TODOS los datos antes de cargar la demo.")
     @click.option("--yes", is_flag=True, help="No pide confirmación al usar --reset.")
+    @click.option("--if-empty", "if_empty", is_flag=True,
+                  help="Carga la demo solo si la base está vacía; si ya tiene datos, no hace nada (útil al arrancar).")
     @click.option("--days", default=45, show_default=True, type=click.IntRange(7, 365), help="Días de historial a simular.")
-    def seed(reset: bool, yes: bool, days: int) -> None:
+    def seed(reset: bool, yes: bool, if_empty: bool, days: int) -> None:
         """Load demo data: users, catalog and ~45 days of movements."""
         from app.demo import DEMO_ACCOUNTS
         from app.seed import clear_all_data, has_data, seed_demo_data
 
+        if reset and if_empty:
+            raise click.UsageError("--reset y --if-empty no se pueden usar juntos.")
         if has_data():
+            if if_empty:
+                # Safe to run on every start: an existing database is never touched.
+                click.echo("La base de datos ya tiene datos: no se carga la demo.")
+                return
             if not reset:
                 raise click.ClickException("La base de datos ya tiene datos. Usa --reset para borrarlos y cargar la demo.")
             if not yes:

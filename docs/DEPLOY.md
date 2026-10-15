@@ -74,14 +74,14 @@ Al terminar, `flask seed` muestra un resumen y los usuarios demo. Contra un serv
 2. **New → Blueprint** y elige tu repositorio. Render lee `render.yaml` y propone el servicio `inventario-flask` en plan *Free*.
 3. Cuando lo pida, pega tu `DATABASE_URL`. La `SECRET_KEY` se genera sola.
 4. En el servicio, ve a **Environment → Secret Files** y agrega un archivo llamado `ca.pem` con el contenido del certificado de Aiven. Render lo deja disponible en `/etc/secrets/ca.pem`, que es la ruta que ya usa `DATABASE_SSL_CA` en `render.yaml`.
-5. Despliega. Cada arranque ejecuta `flask db upgrade` (aplica migraciones nuevas, si las hay) y luego `gunicorn run:app`.
+5. Despliega. Cada arranque ejecuta `flask db upgrade` (aplica migraciones nuevas), `flask seed --if-empty` (carga la demo solo si la base está vacía; nunca borra datos) y luego `gunicorn run:app`.
 6. Abre `https://<tu-servicio>.onrender.com/health`. Debe responder `{"database": "ok", "status": "ok"}`.
 
 **Si prefieres configurarlo a mano en lugar del Blueprint**, crea un *Web Service* con estos valores:
 
 - Runtime: Python.
 - Build command: `pip install -r requirements.txt`.
-- Start command: `flask db upgrade && gunicorn run:app --workers 2 --timeout 60`.
+- Start command: `flask db upgrade && flask seed --if-empty --days 20 && gunicorn run:app --workers 2 --timeout 60`.
 - Variables de entorno: `FLASK_APP=run.py`, `APP_ENV=production`, `DEMO_MODE=true`, `SECRET_KEY`, `DATABASE_URL` y `DATABASE_SSL_CA=/etc/secrets/ca.pem`.
 
 La versión de Python se toma del archivo `.python-version` (3.12).
