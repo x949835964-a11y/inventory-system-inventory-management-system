@@ -1,7 +1,9 @@
-"""Entry point: `flask run` in development, WSGI target in production."""
-from app import create_app
+from app import create_app, db
 
 app = create_app()
 
-if __name__ == "__main__":
-    app.run()
+with app.app_context():
+    db.create_all()
+
+if __name__ == '__main__':
+    app.run(debug=True)
