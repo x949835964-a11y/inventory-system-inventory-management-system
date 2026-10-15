@@ -22,8 +22,8 @@ transacciones seguras ante concurrencia y una suite de tests automatizados.
 | Dashboard | Productos |
 |---|---|
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Productos](docs/screenshots/productos.png) |
-| **Kardex** | **Reporte PDF** |
-| ![Kardex](docs/screenshots/kardex.png) | ![Reporte de inventario en PDF](docs/screenshots/reporte-inventario-pdf.png) |
+
+
 
 Ejemplos de reportes generados por la aplicación: [inventario.pdf](docs/samples/inventario.pdf) ·
 [inventario.xlsx](docs/samples/inventario.xlsx) · [movimientos.pdf](docs/samples/movimientos.pdf) ·
