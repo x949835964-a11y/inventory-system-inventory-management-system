@@ -12,8 +12,17 @@ entradas y salidas de stock, alertas de reposición, kardex por producto, dashbo
 en Excel y PDF. Construida con **Flask + MySQL** siguiendo una arquitectura por capas, con
 transacciones seguras ante concurrencia y una suite de tests automatizados.
 
-**Demo en vivo:** `https://<tu-servicio>.onrender.com` &nbsp;·&nbsp; usuario `admin` / `Admin123` o `empleado` / `Empleado123`
-> La demo usa el plan gratuito: si estuvo inactiva, el primer acceso puede tardar cerca de un minuto en despertar.
+## Demo en vivo
+
+** [inventory-system-inventory-management.onrender.com](https://inventory-system-inventory-management.onrender.com)**
+
+| Rol | Usuario | Contraseña |
+|---|---|---|
+| Administrador | `admin` | `Admin123` |
+| Empleado | `empleado` | `Empleado123` |
+
+> La demo usa el plan gratuito de Render: si estuvo inactiva, la primera carga puede tardar cerca de un minuto.
+> Los datos de prueba se restauran automáticamente cada vez que el servidor se reinicia.
 
 ---
 
