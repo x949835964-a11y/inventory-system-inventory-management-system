@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% from "macros/products.html" import stock_badge %}
+{% from "macros/movements.html" import type_badge, signed_qty %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-0">Hola, {{ current_user.full_name }}</h1>
+    <span class="small text-body-secondary">Resumen del inventario</span>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('movements.create', movement_type='in') }}" class="btn btn-success">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
+    </a>
+    <a href="{{ url_for('movements.create', movement_type='out') }}" class="btn btn-danger">
+      <i class="bi bi-box-arrow-up me-1"></i>Salida
+    </a>
+  </div>
+</div>
+
+{# --- Indicators (stat tiles: a single number is clearer than a chart) --- #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('products.index') }}" class="card kpi-card shadow-sm border-0 h-100 text-decoration-none">
+      <div class="card-body">
+        <div class="small text-body-secondary"><i class="bi bi-box-seam me-1"></i>Productos activos</div>
+        <div class="kpi-value">{{ summary.product_count }}</div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card kpi-card shadow-sm border-0 h-100">
+      <div class="card-body">
+        <div class="small text-body-secondary"><i class="bi bi-cash-stack me-1"></i>Valor del inventario</div>
+        <div class="kpi-value">{{ summary.inventory_value | money }}</div>
+        <div class="small text-body-secondary">a precio de compra</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('products.index', stock='low') }}"
+       class="card kpi-card shadow-sm h-100 text-decoration-none {{ 'border border-warning' if summary.low_stock_count else 'border-0' }}">
+      <div class="card-body">
+        <div class="small text-body-secondary"><i class="bi bi-exclamation-triangle me-1"></i>Productos en alerta</div>
+        <div class="kpi-value">{{ summary.low_stock_count }}</div>
+        <div class="small {{ 'text-danger' if summary.out_of_stock_count else 'text-body-secondary' }}">
+          {% if summary.out_of_stock_count %}
+            <i class="bi bi-x-circle me-1"></i>{{ summary.out_of_stock_count }} agotado(s)
+          {% else %}
+            ninguno agotado
+          {% endif %}
+        </div>
+      </div>
+    </a>
+  </div>
+  <div class="col-6 col-xl-3">
+    <a href="{{ url_for('movements.index') }}" class="card kpi-card shadow-sm border-0 h-100 text-decoration-none">
+      <div class="card-body">
+        <div class="small text-body-secondary"><i class="bi bi-arrow-left-right me-1"></i>Movimientos hoy</div>
+        <div class="kpi-value">{{ summary.movements_today }}</div>
+      </div>
+    </a>
+  </div>
+</div>
+
+{# --- 30-day chart --- #}
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-header bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <h2 class="h6 mb-0">Entradas vs. salidas · últimos 30 días</h2>
+      <span class="small text-body-secondary" id="flow-summary">
+        Entradas {{ chart_data.total_in_value | money }} · Salidas {{ chart_data.total_out_value | money }} (a costo)
+      </span>
+    </div>
+    <div class="btn-group btn-group-sm" role="group" aria-label="Métrica del gráfico">
+      <input type="radio" class="btn-check" name="flow-metric" id="metric-value" value="value" checked>
+      <label class="btn btn-outline-secondary" for="metric-value">Valor (S/)</label>
+      <input type="radio" class="btn-check" name="flow-metric" id="metric-count" value="count">
+      <label class="btn btn-outline-secondary" for="metric-count">N.º de movimientos</label>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="chart-box">
+      <canvas id="flowChart" role="img"
+              aria-label="Gráfico de líneas con el valor diario de entradas y salidas de los últimos 30 días. Hay una tabla con los mismos datos debajo."></canvas>
+    </div>
+    <details class="mt-2">
+      <summary class="small text-body-secondary">Ver los datos como tabla</summary>
+      <div class="table-responsive mt-2" style="max-height: 260px;">
+        <table class="table table-sm small mb-0">
+          <thead class="table-light sticky-top">
+            <tr><th>Día</th><th class="text-end">Entradas (S/)</th><th class="text-end">Salidas (S/)</th><th class="text-end">N.º entradas</th><th class="text-end">N.º salidas</th></tr>
+          </thead>
+          <tbody>
+            {% for i in range(chart_data.labels | length) | reverse %}
+              <tr>
+                <td>{{ chart_data.labels[i] }}</td>
+                <td class="text-end">{{ "%.2f" | format(chart_data.in_value[i]) }}</td>
+                <td class="text-end">{{ "%.2f" | format(chart_data.out_value[i]) }}</td>
+                <td class="text-end">{{ chart_data.in_count[i] }}</td>
+                <td class="text-end">{{ chart_data.out_count[i] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+</div>
+
+<div class="row g-3">
+  {# --- Restock list --- #}
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0"><i class="bi bi-cart-plus me-1"></i>Por reponer</h2>
+        {% if summary.low_stock_count > restock | length %}
+          <a href="{{ url_for('products.index', stock='low') }}" class="small text-decoration-none">Ver los {{ summary.low_stock_count }}</a>
+        {% endif %}
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for product in restock %}
+          <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+            <div class="min-w-0">
+              <a href="{{ url_for('products.detail', product_id=product.id) }}" class="fw-medium text-decoration-none">{{ product.name }}</a>
+              <div class="small text-body-secondary">
+                Stock {{ product.stock | qty }} / mín. {{ product.min_stock | qty }} {{ product.unit }}
+                {% set shortfall = product.min_stock - product.stock %}
+                {% if shortfall > 0 %}· faltan {{ shortfall | qty }}{% endif %}
+              </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+              {{ stock_badge(product) }}
+              <a href="{{ url_for('movements.create', movement_type='in', product_id=product.id) }}"
+                 class="btn btn-sm btn-outline-success" title="Registrar entrada" aria-label="Registrar entrada de {{ product.name }}">
+                <i class="bi bi-plus-lg"></i>
+              </a>
+            </div>
+          </li>
+        {% else %}
+          <li class="list-group-item text-center text-body-secondary py-4">
+            <i class="bi bi-check-circle text-success d-block fs-3 mb-1"></i>Todo el stock está sobre el mínimo.
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  {# --- Recent movements --- #}
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <h2 class="h6 mb-0"><i class="bi bi-clock-history me-1"></i>Últimos movimientos</h2>
+        <a href="{{ url_for('movements.index') }}" class="small text-decoration-none">Ver todos</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <tbody>
+            {% for m in recent %}
+              <tr>
+                <td class="small text-nowrap text-body-secondary">{{ m.movement_date | local_dt("%d/%m %H:%M") }}</td>
+                <td>
+                  <a href="{{ url_for('movements.kardex', product_id=m.product_id) }}" class="text-decoration-none">{{ m.product.name }}</a>
+                  <div class="small text-body-secondary">{{ m.reason.label }} · {{ m.user.username }}</div>
+                </td>
+                <td>{{ type_badge(m) }}</td>
+                <td class="text-end text-nowrap fw-medium">{{ signed_qty(m) }} <span class="small text-body-secondary">{{ m.product.unit }}</span></td>
+              </tr>
+            {% else %}
+              <tr><td class="text-center text-body-secondary py-4">
+                Aún no hay movimientos. <a href="{{ url_for('movements.create', movement_type='in') }}">Registra la primera entrada</a>.
+              </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script id="flow-data" type="application/json">{{ chart_data | tojson }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

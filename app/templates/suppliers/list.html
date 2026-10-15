@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/actions.html" import delete_button, search_bar %}
+
+{% block title %}Proveedores{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0"><i class="bi bi-truck me-2"></i>Proveedores</h1>
+  <a href="{{ url_for('suppliers.create') }}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo proveedor
+  </a>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+  {{ search_bar('suppliers.index', search, placeholder="Buscar por nombre, RUC o contacto...", status=status) }}
+  <div class="btn-group" role="group" aria-label="Filtrar por estado">
+    {% for value, label in [('active', 'Activos'), ('inactive', 'Inactivos'), ('all', 'Todos')] %}
+      <a href="{{ url_for('suppliers.index', status=value, q=search) }}"
+         class="btn btn-outline-secondary {{ 'active' if status == value }}"
+         {{ 'aria-current=true' if status == value }}>{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Proveedor</th>
+          <th>RUC</th>
+          <th class="d-none d-lg-table-cell">Contacto</th>
+          <th class="text-center">Productos</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for supplier in pagination.items %}
+          {% set count = counts.get(supplier.id, 0) %}
+          <tr class="{{ 'text-body-secondary' if not supplier.is_active }}">
+            <td class="fw-medium">{{ supplier.name }}</td>
+            <td class="font-monospace small">{{ supplier.ruc or "—" }}</td>
+            <td class="d-none d-lg-table-cell small">
+              {{ supplier.contact_name or "—" }}
+              {% if supplier.phone %}<div class="text-body-secondary"><i class="bi bi-telephone me-1"></i>{{ supplier.phone }}</div>{% endif %}
+              {% if supplier.email %}<div class="text-body-secondary"><i class="bi bi-envelope me-1"></i>{{ supplier.email }}</div>{% endif %}
+            </td>
+            <td class="text-center"><span class="badge rounded-pill text-bg-light border">{{ count }}</span></td>
+            <td>
+              {% if supplier.is_active %}
+                <span class="badge text-bg-success">Activo</span>
+              {% else %}
+                <span class="badge text-bg-secondary">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a href="{{ url_for('suppliers.edit', supplier_id=supplier.id) }}" class="btn btn-sm btn-outline-primary"
+                 title="Editar" aria-label="Editar {{ supplier.name }}"><i class="bi bi-pencil"></i></a>
+              {% if current_user.is_admin %}
+                {{ delete_button(url_for('suppliers.delete', supplier_id=supplier.id), supplier.name,
+                                 blocked_reason=("Abastece %d producto(s); puedes desactivarlo" % count) if count else None) }}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-body-secondary py-4">
+              {{ "No hay proveedores que coincidan con «%s»." % search if search else "No hay proveedores en esta vista." }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pagination.pages > 1 %}
+    <div class="card-footer bg-transparent">
+      {{ render_pagination(pagination, 'suppliers.index', q=search, status=status) }}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

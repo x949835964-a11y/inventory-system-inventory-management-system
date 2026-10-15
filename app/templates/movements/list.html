@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/movements.html" import type_badge, signed_qty %}
+
+{% block title %}Movimientos{% endblock %}
+
+{% block content %}
+{% set query_args = {"q": filters.search, "type": filters.movement_type, "reason": filters.reason,
+                     "from": filters.date_from.isoformat() if filters.date_from else "",
+                     "to": filters.date_to.isoformat() if filters.date_to else ""} %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0"><i class="bi bi-arrow-left-right me-2"></i>Movimientos de inventario</h1>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('movements.create', movement_type='in') }}" class="btn btn-success">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Registrar entrada
+    </a>
+    <a href="{{ url_for('movements.create', movement_type='out') }}" class="btn btn-danger">
+      <i class="bi bi-box-arrow-up me-1"></i>Registrar salida
+    </a>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('movements.index') }}" class="card card-body shadow-sm border-0 mb-3" role="search">
+  <div class="row g-2 align-items-end">
+    <div class="col-lg-3">
+      <label for="f-q" class="form-label small text-body-secondary mb-1">Producto</label>
+      <input id="f-q" type="search" name="q" value="{{ filters.search }}" class="form-control" placeholder="Nombre o SKU">
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-type" class="form-label small text-body-secondary mb-1">Tipo</label>
+      <select id="f-type" name="type" class="form-select">
+        {% for value, label in [("", "Todos"), ("in", "Entradas"), ("out", "Salidas")] %}
+          <option value="{{ value }}" {{ 'selected' if filters.movement_type == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-reason" class="form-label small text-body-secondary mb-1">Motivo</label>
+      <select id="f-reason" name="reason" class="form-select">
+        <option value="">Todos</option>
+        {% for reason in reasons %}
+          <option value="{{ reason.value }}" {{ 'selected' if filters.reason == reason.value }}>{{ reason.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-from" class="form-label small text-body-secondary mb-1">Desde</label>
+      <input id="f-from" type="date" name="from" value="{{ query_args['from'] }}" class="form-control">
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-to" class="form-label small text-body-secondary mb-1">Hasta</label>
+      <input id="f-to" type="date" name="to" value="{{ query_args['to'] }}" class="form-control">
+    </div>
+    <div class="col-lg-1 d-flex gap-2">
+      <button type="submit" class="btn btn-outline-primary flex-grow-1" title="Filtrar" aria-label="Filtrar"><i class="bi bi-funnel"></i></button>
+      <a href="{{ url_for('movements.index') }}" class="btn btn-outline-secondary" title="Limpiar" aria-label="Limpiar filtros"><i class="bi bi-x-lg"></i></a>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th class="d-none d-md-table-cell">Motivo</th>
+          <th class="text-end">Cantidad</th>
+          <th class="text-end d-none d-lg-table-cell">Saldo</th>
+          <th class="d-none d-lg-table-cell">Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for movement in pagination.items %}
+          <tr>
+            <td class="small text-nowrap">{{ movement.movement_date | local_dt }}</td>
+            <td>
+              <a href="{{ url_for('movements.kardex', product_id=movement.product_id) }}" class="text-decoration-none fw-medium"
+                 title="Ver kardex">{{ movement.product.name }}</a>
+              <div class="small font-monospace text-body-secondary">{{ movement.product.sku }}</div>
+            </td>
+            <td>{{ type_badge(movement) }}</td>
+            <td class="small d-none d-md-table-cell">
+              {{ movement.reason.label }}
+              {% if movement.notes %}<i class="bi bi-chat-left-text text-body-secondary ms-1" data-bs-toggle="tooltip" data-bs-title="{{ movement.notes }}"></i>{% endif %}
+            </td>
+            <td class="text-end text-nowrap fw-medium">{{ signed_qty(movement) }} <span class="small text-body-secondary">{{ movement.product.unit }}</span></td>
+            <td class="text-end d-none d-lg-table-cell">{{ movement.stock_after | qty }}</td>
+            <td class="small d-none d-lg-table-cell">{{ movement.user.username }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="text-center text-body-secondary py-5">
+            <i class="bi bi-inbox display-6 d-block mb-2"></i>No hay movimientos con estos filtros.
+          </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="small text-body-secondary">{{ pagination.total }} movimiento(s)</span>
+    {{ render_pagination(pagination, 'movements.index', **query_args) }}
+  </div>
+</div>
+{% endblock %}

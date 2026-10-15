@@ -1,0 +1,25 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Tests and tooling
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Generated reports and local databases
+*.sqlite3
+*.db
+reports_output/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

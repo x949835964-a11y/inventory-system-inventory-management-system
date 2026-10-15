@@ -1,0 +1,23 @@
+{# Render a WTForms field with Bootstrap 5 classes and its validation errors. #}
+{% macro render_field(field, help=None) %}
+  <div class="mb-3">
+    {{ field.label(class="form-label") }}
+    {% set css = "form-select" if field.type == "SelectField" else "form-control" %}
+    {{ field(class=css ~ (" is-invalid" if field.errors else ""), **kwargs) }}
+    {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+    {% for error in field.errors %}
+      <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% macro render_checkbox(field, help=None) %}
+  <div class="form-check form-switch mb-3">
+    {{ field(class="form-check-input" ~ (" is-invalid" if field.errors else ""), role="switch") }}
+    {{ field.label(class="form-check-label") }}
+    {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+    {% for error in field.errors %}
+      <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endmacro %}

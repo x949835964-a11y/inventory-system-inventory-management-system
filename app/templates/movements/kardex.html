@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "macros/movements.html" import type_badge %}
+
+{% block title %}Kardex · {{ product.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{{ url_for('products.index') }}">Productos</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('products.detail', product_id=product.id) }}">{{ product.sku }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Kardex</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1"><i class="bi bi-journal-text me-2"></i>Kardex: {{ product.name }}</h1>
+    <span class="small text-body-secondary">
+      <span class="font-monospace">{{ product.sku }}</span> · {{ product.category.name }} · Unidad: {{ product.unit_label }}
+    </span>
+  </div>
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+    <div>
+      <label for="k-from" class="form-label small text-body-secondary mb-1">Desde</label>
+      <input id="k-from" type="date" name="from" value="{{ kardex.date_from.isoformat() }}" class="form-control form-control-sm">
+    </div>
+    <div>
+      <label for="k-to" class="form-label small text-body-secondary mb-1">Hasta</label>
+      <input id="k-to" type="date" name="to" value="{{ kardex.date_to.isoformat() }}" class="form-control form-control-sm">
+    </div>
+    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="bi bi-funnel me-1"></i>Aplicar</button>
+  </form>
+</div>
+
+<div class="row g-3 mb-3">
+  {% for label, value, css in [
+       ("Saldo inicial", kardex.opening_balance, ""),
+       ("Entradas", kardex.total_in, "text-success"),
+       ("Salidas", kardex.total_out, "text-danger"),
+       ("Saldo final", kardex.closing_balance, "fw-bold"),
+     ] %}
+    <div class="col-6 col-lg-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="small text-body-secondary">{{ label }}</div>
+          <div class="fs-5 {{ css }}">{{ value | qty }} <span class="small text-body-secondary">{{ product.unit }}</span></div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+{% if not kardex.is_consistent %}
+  <div class="alert alert-danger" role="alert">
+    <i class="bi bi-exclamation-octagon me-1"></i>
+    Inconsistencia: saldo inicial + entradas − salidas no coincide con el saldo final. Revisa los movimientos.
+  </div>
+{% endif %}
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Motivo</th>
+          <th class="text-end">Entrada</th>
+          <th class="text-end">Salida</th>
+          <th class="text-end">Saldo</th>
+          <th class="text-end d-none d-md-table-cell">Costo unit.</th>
+          <th class="text-end d-none d-md-table-cell">Costo total</th>
+          <th class="d-none d-lg-table-cell">Usuario</th>
+          <th class="d-none d-lg-table-cell">Observaciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="table-light">
+          <td colspan="5" class="small fw-medium">Saldo al {{ kardex.date_from.strftime('%d/%m/%Y') }}</td>
+          <td class="text-end fw-medium">{{ kardex.opening_balance | qty }}</td>
+          <td colspan="4" class="d-none d-md-table-cell"></td>
+        </tr>
+        {% for m in kardex.rows %}
+          {% set is_in = m.movement_type.value == "in" %}
+          <tr>
+            <td class="small text-nowrap">{{ m.movement_date | local_dt }}</td>
+            <td>{{ type_badge(m) }}</td>
+            <td class="small">{{ m.reason.label }}</td>
+            <td class="text-end text-success">{{ (m.quantity | qty) if is_in else "" }}</td>
+            <td class="text-end text-danger">{{ "" if is_in else (m.quantity | qty) }}</td>
+            <td class="text-end fw-medium">{{ m.stock_after | qty }}</td>
+            <td class="text-end small d-none d-md-table-cell">{{ m.unit_cost | money }}</td>
+            <td class="text-end small d-none d-md-table-cell">{{ m.total_cost | money }}</td>
+            <td class="small d-none d-lg-table-cell">{{ m.user.username }}</td>
+            <td class="small text-body-secondary d-none d-lg-table-cell">{{ m.notes or "" }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" class="text-center text-body-secondary py-4">Sin movimientos en este rango de fechas.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if kardex.rows %}
+        <tfoot class="table-light">
+          <tr class="fw-medium">
+            <td colspan="3">Totales del periodo</td>
+            <td class="text-end text-success">{{ kardex.total_in | qty }}</td>
+            <td class="text-end text-danger">{{ kardex.total_out | qty }}</td>
+            <td class="text-end">{{ kardex.closing_balance | qty }}</td>
+            <td class="d-none d-md-table-cell"></td>
+            <td class="text-end small d-none d-md-table-cell" title="Costo de entradas / costo de salidas">
+              {{ kardex.total_in_cost | money }} / {{ kardex.total_out_cost | money }}
+            </td>
+            <td colspan="2" class="d-none d-lg-table-cell"></td>
+          </tr>
+        </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+
+<div class="d-flex gap-2 mt-3">
+  {% if product.is_active %}
+    <a href="{{ url_for('movements.create', movement_type='in', product_id=product.id) }}" class="btn btn-sm btn-success">
+      <i class="bi bi-box-arrow-in-down me-1"></i>Registrar entrada
+    </a>
+    <a href="{{ url_for('movements.create', movement_type='out', product_id=product.id) }}" class="btn btn-sm btn-danger">
+      <i class="bi bi-box-arrow-up me-1"></i>Registrar salida
+    </a>
+  {% endif %}
+</div>
+{% endblock %}

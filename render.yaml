@@ -1,0 +1,28 @@
+# Render Blueprint: creates the web service with these settings (Render dashboard > New > Blueprint).
+# Values marked "sync: false" are secrets: Render asks for them during setup; they are never in Git.
+services:
+  - type: web
+    name: inventario-flask
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # Apply pending migrations on every start, then serve with gunicorn.
+    startCommand: flask db upgrade && gunicorn run:app --workers 2 --timeout 60
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_APP
+        value: run.py
+      - key: APP_ENV
+        value: production
+      - key: APP_TIMEZONE
+        value: America/Lima
+      - key: DEMO_MODE
+        value: "true"
+      - key: BUSINESS_NAME
+        value: Bodega Demo
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA
+        value: /etc/secrets/ca.pem

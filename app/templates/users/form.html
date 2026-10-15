@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import render_field, render_checkbox %}
+
+{% block title %}{{ 'Editar usuario' if user else 'Nuevo usuario' }}{% endblock %}
+
+{% block content %}
+{% set editing = user is not none %}
+<div class="row justify-content-center">
+  <div class="col-md-8 col-lg-6">
+    <h1 class="h4 mb-3">
+      <i class="bi bi-{{ 'pencil' if editing else 'person-plus' }} me-2"></i>
+      {{ 'Editar usuario: ' ~ user.username if editing else 'Nuevo usuario' }}
+    </h1>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {% if editing %}
+            <div class="mb-3">
+              <label class="form-label" for="username-readonly">Usuario</label>
+              <input id="username-readonly" class="form-control" value="{{ user.username }}" disabled>
+              <div class="form-text">El nombre de usuario no se puede cambiar.</div>
+            </div>
+          {% else %}
+            {{ render_field(form.username, autocomplete="off") }}
+          {% endif %}
+
+          {{ render_field(form.full_name) }}
+          {{ render_field(form.role, help="El empleado registra movimientos, pero no elimina productos ni gestiona usuarios.") }}
+
+          {% if editing %}
+            {{ render_checkbox(form.is_active, help="Un usuario inactivo no puede iniciar sesión.") }}
+          {% else %}
+            {{ render_field(form.password, autocomplete="new-password", help="Mínimo 8 caracteres, con letras y números.") }}
+            {{ render_field(form.confirm_password, autocomplete="new-password") }}
+          {% endif %}
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+            <a href="{{ url_for('users.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

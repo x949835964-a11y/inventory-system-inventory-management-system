@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<h1 class="h4 mb-1"><i class="bi bi-file-earmark-bar-graph me-2"></i>Reportes</h1>
+<p class="text-body-secondary small mb-4">
+  Elige los filtros y descarga el reporte. El Excel incluye fórmulas (totales y estados se recalculan si editas el archivo);
+  el PDF está listo para imprimir o enviar.
+</p>
+
+<div class="row g-3">
+  {# --- Current inventory --- #}
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body p-4">
+        <h2 class="h5"><i class="bi bi-box-seam me-2 text-primary"></i>Inventario actual</h2>
+        <p class="small text-body-secondary">Stock, precios, valor a costo y estado de cada producto activo.</p>
+        <form method="get" id="inventory-form">
+          <div class="mb-3">
+            <label for="r-category" class="form-label">Categoría</label>
+            <select id="r-category" name="category" class="form-select">
+              <option value="">Todas</option>
+              {% for id, name in categories %}<option value="{{ id }}">{{ name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-check form-switch mb-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="r-low" name="stock" value="low">
+            <label class="form-check-label" for="r-low">Solo productos por reponer (stock bajo o agotado)</label>
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-success" formaction="{{ url_for('reports.inventory', fmt='xlsx') }}">
+              <i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel
+            </button>
+            <button type="submit" class="btn btn-danger" formaction="{{ url_for('reports.inventory', fmt='pdf') }}">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# --- Movements by date range --- #}
+  <div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-body p-4">
+        <h2 class="h5"><i class="bi bi-arrow-left-right me-2 text-primary"></i>Movimientos por fechas</h2>
+        <p class="small text-body-secondary">Entradas y salidas del periodo con costos, saldos y un resumen por motivo.</p>
+        <form method="get" id="movements-form">
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label for="r-from" class="form-label">Desde</label>
+              <input id="r-from" type="date" name="from" class="form-control" value="{{ default_from.isoformat() }}"
+                     max="{{ default_to.isoformat() }}" required>
+            </div>
+            <div class="col-6">
+              <label for="r-to" class="form-label">Hasta</label>
+              <input id="r-to" type="date" name="to" class="form-control" value="{{ default_to.isoformat() }}"
+                     max="{{ default_to.isoformat() }}" required>
+            </div>
+          </div>
+          <div class="row g-2 mb-4">
+            <div class="col-md-5">
+              <label for="r-type" class="form-label">Tipo</label>
+              <select id="r-type" name="type" class="form-select">
+                <option value="">Entradas y salidas</option>
+                <option value="in">Solo entradas</option>
+                <option value="out">Solo salidas</option>
+              </select>
+            </div>
+            <div class="col-md-7">
+              <label for="r-q" class="form-label">Producto <span class="text-body-secondary small">(opcional)</span></label>
+              <input id="r-q" type="search" name="q" class="form-control" placeholder="Nombre o SKU">
+            </div>
+          </div>
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <button type="submit" class="btn btn-success" formaction="{{ url_for('reports.movements', fmt='xlsx') }}">
+              <i class="bi bi-file-earmark-excel me-1"></i>Descargar Excel
+            </button>
+            <button type="submit" class="btn btn-danger" formaction="{{ url_for('reports.movements', fmt='pdf') }}">
+              <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+            </button>
+            <span class="small text-body-secondary">Máximo {{ max_days }} días por reporte.</span>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

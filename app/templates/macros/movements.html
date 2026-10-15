@@ -1,0 +1,17 @@
+{# Visual helpers for inventory movements. #}
+{% macro type_badge(movement) %}
+  {% if movement.movement_type.value == "in" %}
+    <span class="badge text-bg-success"><i class="bi bi-arrow-down-circle me-1"></i>Entrada</span>
+  {% else %}
+    <span class="badge text-bg-danger"><i class="bi bi-arrow-up-circle me-1"></i>Salida</span>
+  {% endif %}
+{% endmacro %}
+
+{# Signed quantity: +24 for entries, −3 for exits. #}
+{% macro signed_qty(movement) %}
+  {% if movement.movement_type.value == "in" %}
+    <span class="text-success">+{{ movement.quantity | qty }}</span>
+  {% else %}
+    <span class="text-danger">−{{ movement.quantity | qty }}</span>
+  {% endif %}
+{% endmacro %}

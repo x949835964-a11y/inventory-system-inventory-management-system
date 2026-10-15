@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% from "macros/pagination.html" import render_pagination %}
+{% from "macros/actions.html" import confirm_button %}
+{% from "macros/products.html" import stock_badge %}
+
+{% block title %}Productos{% endblock %}
+
+{% block content %}
+{# Current filters, kept in every pagination link. #}
+{% set query_args = {"q": filters.search, "category": filters.category_id or "", "stock": filters.stock,
+                     "status": filters.status, "sort": filters.sort} %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0"><i class="bi bi-box-seam me-2"></i>Productos</h1>
+  <div class="d-flex gap-2">
+    {% if low_stock_total %}
+      <a href="{{ url_for('products.index', stock='low') }}" class="btn btn-outline-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i>Stock bajo
+        <span class="badge text-bg-warning ms-1">{{ low_stock_total }}</span>
+      </a>
+    {% endif %}
+    <a href="{{ url_for('products.create') }}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+    </a>
+  </div>
+</div>
+
+<form method="get" action="{{ url_for('products.index') }}" class="card card-body shadow-sm border-0 mb-3" role="search">
+  <div class="row g-2 align-items-end">
+    <div class="col-lg-4">
+      <label for="f-q" class="form-label small text-body-secondary mb-1">Buscar</label>
+      <div class="input-group">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input id="f-q" type="search" name="q" value="{{ filters.search }}" class="form-control"
+               placeholder="Nombre o SKU">
+      </div>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-category" class="form-label small text-body-secondary mb-1">Categoría</label>
+      <select id="f-category" name="category" class="form-select">
+        <option value="">Todas</option>
+        {% for id, name in categories %}
+          <option value="{{ id }}" {{ 'selected' if filters.category_id == id }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <label for="f-stock" class="form-label small text-body-secondary mb-1">Stock</label>
+      <select id="f-stock" name="stock" class="form-select">
+        {% for value, label in [("", "Todos"), ("low", "Stock bajo"), ("out", "Agotados")] %}
+          <option value="{{ value }}" {{ 'selected' if filters.stock == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if current_user.is_admin %}
+      <div class="col-6 col-lg-1">
+        <label for="f-status" class="form-label small text-body-secondary mb-1">Estado</label>
+        <select id="f-status" name="status" class="form-select">
+          {% for value, label in [("active", "Activos"), ("inactive", "Inactivos"), ("all", "Todos")] %}
+            <option value="{{ value }}" {{ 'selected' if filters.status == value }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    <div class="col-6 col-lg-1">
+      <label for="f-sort" class="form-label small text-body-secondary mb-1">Orden</label>
+      <select id="f-sort" name="sort" class="form-select">
+        {% for value, label in [("name", "Nombre"), ("sku", "SKU"), ("stock", "Stock")] %}
+          <option value="{{ value }}" {{ 'selected' if filters.sort == value }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-lg-2 d-flex gap-2">
+      <button type="submit" class="btn btn-outline-primary flex-grow-1">Filtrar</button>
+      <a href="{{ url_for('products.index') }}" class="btn btn-outline-secondary" title="Limpiar filtros"
+         aria-label="Limpiar filtros"><i class="bi bi-x-lg"></i></a>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm border-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>SKU</th>
+          <th>Producto</th>
+          <th class="d-none d-md-table-cell">Categoría</th>
+          <th class="text-end">Stock</th>
+          <th class="text-end d-none d-lg-table-cell">Mínimo</th>
+          <th class="text-end d-none d-sm-table-cell">P. venta</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in pagination.items %}
+          <tr class="{{ 'table-warning' if product.is_active and product.is_low_stock }} {{ 'text-body-secondary' if not product.is_active }}">
+            <td class="font-monospace small">{{ product.sku }}</td>
+            <td>
+              <a href="{{ url_for('products.detail', product_id=product.id) }}" class="fw-medium text-decoration-none">
+                {{ product.name }}
+              </a>
+              {% if product.supplier %}<div class="small text-body-secondary">{{ product.supplier.name }}</div>{% endif %}
+            </td>
+            <td class="d-none d-md-table-cell small">{{ product.category.name }}</td>
+            <td class="text-end text-nowrap fw-medium">{{ product.stock | qty }} <span class="small text-body-secondary">{{ product.unit }}</span></td>
+            <td class="text-end d-none d-lg-table-cell small">{{ product.min_stock | qty }}</td>
+            <td class="text-end d-none d-sm-table-cell text-nowrap">{{ product.sale_price | money }}</td>
+            <td>
+              {% if product.is_active %}
+                {{ stock_badge(product) }}
+              {% else %}
+                <span class="badge text-bg-secondary">Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a href="{{ url_for('products.detail', product_id=product.id) }}" class="btn btn-sm btn-outline-secondary"
+                 title="Ver detalle" aria-label="Ver {{ product.name }}"><i class="bi bi-eye"></i></a>
+              {% if product.is_active %}
+                <a href="{{ url_for('products.edit', product_id=product.id) }}" class="btn btn-sm btn-outline-primary"
+                   title="Editar" aria-label="Editar {{ product.name }}"><i class="bi bi-pencil"></i></a>
+                {% if current_user.is_admin %}
+                  {{ confirm_button(url_for('products.deactivate', product_id=product.id), "Desactivar producto",
+                                    "«" ~ product.name ~ "» dejará de aparecer en listas y formularios. Su historial de movimientos se conserva y podrás reactivarlo.",
+                                    "Desactivar", "archive") }}
+                {% endif %}
+              {% elif current_user.is_admin %}
+                {{ confirm_button(url_for('products.activate', product_id=product.id), "Reactivar producto",
+                                  "«" ~ product.name ~ "» volverá a estar disponible.", "Reactivar",
+                                  "arrow-counterclockwise", variant="success") }}
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-body-secondary py-5">
+              <i class="bi bi-inbox display-6 d-block mb-2"></i>
+              {% if filters.search or filters.category_id or filters.stock %}
+                Ningún producto coincide con los filtros.
+                <a href="{{ url_for('products.index') }}">Ver todos</a>
+              {% else %}
+                Aún no hay productos. <a href="{{ url_for('products.create') }}">Registra el primero</a>.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <span class="small text-body-secondary">{{ pagination.total }} producto(s)</span>
+    {{ render_pagination(pagination, 'products.index', **query_args) }}
+  </div>
+</div>
+{% endblock %}

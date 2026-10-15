@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% from "macros/actions.html" import confirm_button %}
+{% from "macros/products.html" import stock_badge %}
+{% from "macros/movements.html" import type_badge, signed_qty %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a href="{{ url_for('products.index') }}">Productos</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ product.sku }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ product.name }}</h1>
+    <span class="font-monospace small text-body-secondary me-2">{{ product.sku }}</span>
+    {% if product.is_active %}{{ stock_badge(product) }}{% else %}<span class="badge text-bg-secondary">Inactivo</span>{% endif %}
+  </div>
+  <div class="d-flex gap-2">
+    {% if product.is_active %}
+      <a href="{{ url_for('movements.create', movement_type='in', product_id=product.id) }}" class="btn btn-success">
+        <i class="bi bi-box-arrow-in-down me-1"></i>Entrada
+      </a>
+      <a href="{{ url_for('movements.create', movement_type='out', product_id=product.id) }}" class="btn btn-danger">
+        <i class="bi bi-box-arrow-up me-1"></i>Salida
+      </a>
+      <a href="{{ url_for('movements.kardex', product_id=product.id) }}" class="btn btn-outline-secondary">
+        <i class="bi bi-journal-text me-1"></i>Kardex
+      </a>
+      <a href="{{ url_for('products.edit', product_id=product.id) }}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      {% if current_user.is_admin %}
+        {{ confirm_button(url_for('products.deactivate', product_id=product.id), "Desactivar producto",
+                          "«" ~ product.name ~ "» dejará de aparecer en listas y formularios. Su historial se conserva.",
+                          "Desactivar", "archive", btn_class="", text="Desactivar") }}
+      {% endif %}
+    {% elif current_user.is_admin %}
+      {{ confirm_button(url_for('products.activate', product_id=product.id), "Reactivar producto",
+                        "«" ~ product.name ~ "» volverá a estar disponible.", "Reactivar",
+                        "arrow-counterclockwise", variant="success", btn_class="", text="Reactivar") }}
+    {% endif %}
+  </div>
+</div>
+
+{% if product.is_active and product.is_low_stock %}
+  <div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+      {% if product.is_out_of_stock %}Producto agotado.{% else %}Stock por debajo del mínimo.{% endif %}
+      Stock actual: <strong>{{ product.stock | qty }} {{ product.unit }}</strong>,
+      mínimo: {{ product.min_stock | qty }} {{ product.unit }}. Conviene reponer.
+    </div>
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  {% for label, value, icon in [
+       ("Stock actual", (product.stock | qty) ~ " " ~ product.unit_label, "box-seam"),
+       ("Valor en inventario", product.stock_value | money, "cash-stack"),
+       ("Precio de venta", product.sale_price | money, "tag"),
+       ("Margen sobre costo", ("%s%%" % product.margin_percent) if product.margin_percent is not none else "—", "graph-up-arrow"),
+     ] %}
+    <div class="col-6 col-lg-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="small text-body-secondary"><i class="bi bi-{{ icon }} me-1"></i>{{ label }}</div>
+          <div class="fs-5 fw-medium">{{ value }}</div>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-transparent fw-medium">Ficha del producto</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Categoría</dt><dd class="col-7">{{ product.category.name }}</dd>
+          <dt class="col-5">Proveedor</dt><dd class="col-7">{{ product.supplier.name if product.supplier else "—" }}</dd>
+          <dt class="col-5">Unidad</dt><dd class="col-7">{{ product.unit_label }} ({{ product.unit }})</dd>
+          <dt class="col-5">Precio de compra</dt><dd class="col-7">{{ product.purchase_price | money }}</dd>
+          <dt class="col-5">Stock mínimo</dt><dd class="col-7">{{ product.min_stock | qty }} {{ product.unit }}</dd>
+          <dt class="col-5">Registrado</dt><dd class="col-7">{{ product.created_at | local_dt }}</dd>
+          <dt class="col-5">Última edición</dt><dd class="col-7">{{ product.updated_at | local_dt }}</dd>
+          {% if product.description %}
+            <dt class="col-12 mt-2">Descripción</dt><dd class="col-12 text-body-secondary">{{ product.description }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-transparent fw-medium d-flex justify-content-between align-items-center">
+        Últimos movimientos
+        <a href="{{ url_for('movements.kardex', product_id=product.id) }}" class="small text-decoration-none">Ver kardex completo</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Fecha</th><th>Tipo</th><th>Motivo</th><th class="text-end">Cantidad</th><th class="text-end">Saldo</th><th class="d-none d-md-table-cell">Usuario</th></tr>
+          </thead>
+          <tbody>
+            {% for movement in movements %}
+              <tr>
+                <td class="small text-nowrap">{{ movement.movement_date | local_dt }}</td>
+                <td>{{ type_badge(movement) }}</td>
+                <td class="small">{{ movement.reason.label }}</td>
+                <td class="text-end">{{ signed_qty(movement) }}</td>
+                <td class="text-end fw-medium">{{ movement.stock_after | qty }}</td>
+                <td class="small d-none d-md-table-cell">{{ movement.user.username }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="6" class="text-center text-body-secondary py-4">Sin movimientos registrados.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

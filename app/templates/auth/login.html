@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import render_field, render_checkbox %}
+
+{% block title %}Iniciar sesión{% endblock %}
+{% block main_class %}login-page d-flex flex-column justify-content-center align-items-center py-5{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 420px;">
+  <div class="text-center mb-4">
+    <i class="bi bi-box-seam-fill display-5 text-warning"></i>
+    <h1 class="h3 mt-2 mb-1">Sistema de Inventario</h1>
+    <p class="text-body-secondary">Ingresa con tu usuario para continuar</p>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        {{ render_field(form.username, autocomplete="username", autofocus=true) }}
+        {{ render_field(form.password, autocomplete="current-password") }}
+        {{ render_checkbox(form.remember) }}
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-box-arrow-in-right me-1"></i>{{ form.submit.label.text }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if demo_accounts %}
+    <div class="card border-0 shadow-sm mt-3">
+      <div class="card-body small">
+        <div class="fw-medium mb-2"><i class="bi bi-info-circle me-1 text-primary"></i>Demo pública: usa una de estas cuentas</div>
+        <table class="table table-sm mb-0">
+          <tbody>
+            {% for username, _name, role, password in demo_accounts %}
+              <tr>
+                <td>{{ role.label }}</td>
+                <td class="font-monospace">{{ username }}</td>
+                <td class="font-monospace">{{ password }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

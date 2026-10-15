@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import render_field, render_checkbox %}
+
+{% block title %}{{ 'Editar proveedor' if supplier else 'Nuevo proveedor' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h1 class="h4 mb-3">
+      <i class="bi bi-{{ 'pencil' if supplier else 'plus-lg' }} me-2"></i>
+      {{ 'Editar proveedor: ' ~ supplier.name if supplier else 'Nuevo proveedor' }}
+    </h1>
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="row">
+            <div class="col-md-8">{{ render_field(form.name, autofocus=true) }}</div>
+            <div class="col-md-4">
+              {{ render_field(form.ruc, inputmode="numeric", maxlength=11, placeholder="20XXXXXXXXX",
+                              help="Opcional. 11 dígitos; se valida el dígito verificador.") }}
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">{{ render_field(form.contact_name) }}</div>
+            <div class="col-md-6">{{ render_field(form.phone, inputmode="tel", placeholder="999 888 777") }}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">{{ render_field(form.email, type="email") }}</div>
+            <div class="col-md-6">{{ render_field(form.address) }}</div>
+          </div>
+          {{ render_checkbox(form.is_active, help="Los proveedores inactivos no aparecen al registrar productos nuevos.") }}
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+            <a href="{{ url_for('suppliers.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

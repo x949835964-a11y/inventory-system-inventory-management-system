@@ -1,0 +1,10 @@
+{# Stock level indicator, reused in the product list, detail page and (later) the dashboard. #}
+{% macro stock_badge(product) %}
+  {% if product.is_out_of_stock %}
+    <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1"></i>Agotado</span>
+  {% elif product.is_low_stock %}
+    <span class="badge text-bg-warning"><i class="bi bi-exclamation-triangle me-1"></i>Stock bajo</span>
+  {% else %}
+    <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>Disponible</span>
+  {% endif %}
+{% endmacro %}

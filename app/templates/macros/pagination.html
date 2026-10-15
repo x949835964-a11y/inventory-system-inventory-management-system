@@ -1,0 +1,27 @@
+{# Bootstrap pagination for a Flask-SQLAlchemy Pagination object.
+   Extra keyword arguments (search, filters) are kept in every page link. #}
+{% macro render_pagination(pagination, endpoint) %}
+  {% if pagination.pages > 1 %}
+    <nav aria-label="Paginación">
+      <ul class="pagination pagination-sm justify-content-center mb-0">
+        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+          <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, **kwargs) if pagination.has_prev else '#' }}"
+             aria-label="Anterior">&laquo;</a>
+        </li>
+        {% for page in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+          {% if page %}
+            <li class="page-item {{ 'active' if page == pagination.page }}">
+              <a class="page-link" href="{{ url_for(endpoint, page=page, **kwargs) }}">{{ page }}</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+          {% endif %}
+        {% endfor %}
+        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+          <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, **kwargs) if pagination.has_next else '#' }}"
+             aria-label="Siguiente">&raquo;</a>
+        </li>
+      </ul>
+    </nav>
+  {% endif %}
+{% endmacro %}

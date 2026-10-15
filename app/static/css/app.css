@@ -1,0 +1,65 @@
+/* Small overrides on top of Bootstrap 5. */
+
+body {
+  background-color: #f5f6f8;
+}
+
+.login-page {
+  background: linear-gradient(160deg, #1f2937 0%, #111827 45%, #f5f6f8 45%);
+}
+
+.login-page h1,
+.login-page .text-body-secondary {
+  color: #f9fafb !important;
+}
+
+.login-page .flash-stack {
+  width: 100%;
+  max-width: 420px;
+  padding: 0 0.75rem;
+}
+
+.card {
+  border-radius: 0.75rem;
+}
+
+.table > :not(caption) > * > * {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Keep flash messages readable at the top without pushing content around on mobile. */
+.flash-stack .alert:last-child {
+  margin-bottom: 1.5rem;
+}
+
+.navbar .nav-link.active {
+  font-weight: 500;
+}
+
+/* Dashboard */
+.kpi-card {
+  color: inherit;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+a.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-box {
+  position: relative;
+  height: 300px;
+}
+
+.min-w-0 {
+  min-width: 0;
+}

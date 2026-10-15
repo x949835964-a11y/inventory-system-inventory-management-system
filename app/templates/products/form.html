@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "macros/forms.html" import render_field %}
+
+{% block title %}{{ 'Editar producto' if product else 'Nuevo producto' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <h1 class="h4 mb-3">
+      <i class="bi bi-{{ 'pencil' if product else 'plus-lg' }} me-2"></i>
+      {{ 'Editar producto: ' ~ product.name if product else 'Nuevo producto' }}
+    </h1>
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-transparent fw-medium">Datos generales</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">{{ render_field(form.sku, autofocus=not product, placeholder="Ej. ARR-5KG",
+                                                   help="Código único; se guarda en mayúsculas.") }}</div>
+            <div class="col-md-8">{{ render_field(form.name) }}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-4">{{ render_field(form.category_id) }}</div>
+            <div class="col-md-4">{{ render_field(form.supplier_id) }}</div>
+            <div class="col-md-4">{{ render_field(form.unit, help="KG, G, L, ML y M admiten decimales.") }}</div>
+          </div>
+          {{ render_field(form.description, rows=2) }}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-transparent fw-medium">Precios y stock</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-6 col-md-3">{{ render_field(form.purchase_price, inputmode="decimal", placeholder="0.00") }}</div>
+            <div class="col-6 col-md-3">{{ render_field(form.sale_price, inputmode="decimal", placeholder="0.00") }}</div>
+            <div class="col-6 col-md-3">{{ render_field(form.min_stock, inputmode="decimal",
+                                                        help="Al llegar a este nivel se genera una alerta.") }}</div>
+            {% if form.initial_stock %}
+              <div class="col-6 col-md-3">{{ render_field(form.initial_stock, inputmode="decimal",
+                                                          help="Se registra como primer movimiento.") }}</div>
+            {% else %}
+              <div class="col-6 col-md-3">
+                <label class="form-label" for="stock-readonly">Stock actual</label>
+                <input id="stock-readonly" class="form-control" value="{{ product.stock | qty }} {{ product.unit }}" disabled>
+                <div class="form-text">Cambia solo con movimientos de entrada o salida.</div>
+              </div>
+            {% endif %}
+          </div>
+          <p class="small mb-0" id="margin-preview" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ form.submit.label.text }}</button>
+        <a href="{{ url_for('products.detail', product_id=product.id) if product else url_for('products.index') }}"
+           class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live margin preview. Only a convenience: the server validates and warns on its own.
+  (() => {
+    const buy = document.getElementById("purchase_price");
+    const sell = document.getElementById("sale_price");
+    const out = document.getElementById("margin-preview");
+    const parse = (input) => parseFloat((input.value || "").replace(",", "."));
+    const update = () => {
+      const cost = parse(buy), price = parse(sell);
+      if (!(cost > 0) || isNaN(price)) { out.textContent = ""; return; }
+      const margin = ((price - cost) / cost) * 100;
+      out.className = "small mb-0 " + (margin < 0 ? "text-danger" : "text-body-secondary");
+      out.textContent = margin < 0
+        ? `El precio de venta está ${Math.abs(margin).toFixed(1)}% por debajo del costo.`
+        : `Margen sobre el costo: ${margin.toFixed(1)}% (S/ ${(price - cost).toFixed(2)} por unidad).`;
+    };
+    [buy, sell].forEach((el) => el.addEventListener("input", update));
+    update();
+  })();
+</script>
+{% endblock %}

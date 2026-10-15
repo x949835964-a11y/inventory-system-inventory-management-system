@@ -1,0 +1,45 @@
+{# Button that opens the shared confirmation modal (base.html) and, if confirmed, POSTs to url.
+   The server enforces every rule again; the dialog only prevents accidental clicks. #}
+{% macro confirm_button(url, title, message, label, icon, variant="danger", btn_class="btn-sm", text=None) %}
+  <button type="button" class="btn {{ btn_class }} btn-outline-{{ variant }}" title="{{ label }}"
+          data-bs-toggle="modal" data-bs-target="#confirmModal"
+          data-confirm-url="{{ url }}" data-confirm-title="{{ title }}" data-confirm-message="{{ message }}"
+          data-confirm-label="{{ label }}" data-confirm-variant="{{ variant }}" aria-label="{{ label }}">
+    <i class="bi bi-{{ icon }}"></i>{% if text %} {{ text }}{% endif %}
+  </button>
+{% endmacro %}
+
+{# Delete button. With blocked_reason it is disabled and the reason shows as a tooltip. #}
+{% macro delete_button(url, name, blocked_reason=None) %}
+  {% if blocked_reason %}
+    <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" data-bs-title="{{ blocked_reason }}">
+      <button type="button" class="btn btn-sm btn-outline-danger" disabled aria-label="No se puede eliminar {{ name }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </span>
+  {% else %}
+    {{ confirm_button(url, "Confirmar eliminación",
+                      "¿Seguro que deseas eliminar «" ~ name ~ "»? Esta acción no se puede deshacer.",
+                      "Eliminar", "trash") }}
+  {% endif %}
+{% endmacro %}
+
+{# Search box for list pages. Extra hidden filters are passed as keyword arguments. #}
+{% macro search_bar(endpoint, search, placeholder="Buscar...") %}
+  <form method="get" action="{{ url_for(endpoint) }}" class="d-flex gap-2 flex-grow-1" role="search">
+    {% for key, value in kwargs.items() %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+    <div class="input-group">
+      <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+      <input type="search" name="q" value="{{ search }}" class="form-control" placeholder="{{ placeholder }}"
+             aria-label="{{ placeholder }}">
+    </div>
+    <button type="submit" class="btn btn-outline-primary">Buscar</button>
+    {% if search %}
+      <a href="{{ url_for(endpoint, **kwargs) }}" class="btn btn-outline-secondary" title="Limpiar búsqueda">
+        <i class="bi bi-x-lg"></i>
+      </a>
+    {% endif %}
+  </form>
+{% endmacro %}
