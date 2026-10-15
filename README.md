@@ -19,9 +19,7 @@ transacciones seguras ante concurrencia y una suite de tests automatizados.
 
 ## Capturas
 
-| Dashboard | Productos |
-|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Productos](docs/screenshots/productos.png) |
+
 
 
 
