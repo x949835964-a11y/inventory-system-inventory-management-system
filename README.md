@@ -14,7 +14,7 @@ transacciones seguras ante concurrencia y una suite de tests automatizados.
 
 ## Demo en vivo
 
-** [inventory-system-inventory-management.onrender.com](https://inventory-system-inventory-management.onrender.com)**
+**[inventory-system-inventory-management.onrender.com](https://inventory-system-inventory-management.onrender.com)**
 
 | Rol | Usuario | Contraseña |
 |---|---|---|
